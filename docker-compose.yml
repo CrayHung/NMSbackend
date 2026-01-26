@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  app:
+    image: ghcr.io/crayhung/cray-myauth-spring-boot:v1
+    restart: always
+    ports:
+      # 【修正 1】左邊改成 9090 (主機 Port)，右邊維持 8080 (容器 Port)
+      - "9090:8080"
+    depends_on:
+      - db
+    environment:
+      # 資料庫連線 (維持不變，走 Docker 內部網路)
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: auth_password
+      
+      # 【修正 2】覆寫 OAuth 設定 (解決問題 3)
+      # 這裡必須填「使用者瀏覽器」看到的 Nginx 入口網址，也就是 9080 Port
+      LINE_CALLBACK_URL: "http://twowayiot.com:9080/callback"
+      
+      # Facebook 需要完整路徑
+      FACEBOOK_REDIRECT_URI: "http://twowayiot.com:9080/auth/facebook/callback"
+      
+      # Google 若在 application.properties 沒設變數，這裡不用加，
+      # 但您的 Java Code 是讀取前端傳來的 redirectUri，所以後端這裡主要是為了 LINE。
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

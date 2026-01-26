@@ -1,0 +1,60 @@
+# 這是原本在localhost用的檔案
+
+
+
+# # 如果要更改對外port , ports 的格式是 "主機 Port : 容器內部 Port"。我們只需要修改冒號 左邊 的數字。
+# # 而因為對外的Spring boot port更改為8081 , 所以react端也要呼叫到8081的port    http://localhost:8081/api/auth/line
+# # 如果想單獨查看Mysql的Auth資料庫,也要透過新的對外port 3307去做登入
+# version: '3.8'
+
+# services:
+#   # 1. MySQL 資料庫
+#   db:
+#     image: mysql:8.0
+#     container_name: auth-mysql
+#     environment:
+#       MYSQL_ROOT_PASSWORD: rootpassword
+#       MYSQL_DATABASE: auth_db
+#       MYSQL_USER: auth_user
+#       MYSQL_PASSWORD: auth_password
+#       TZ: Asia/Taipei  # <--- [新增] 設定 MySQL 容器時區為台灣時間
+#     ports:
+#       # - "3306:3306"
+#       - "3307:3306"  # <--- 修改這裡：左邊改成 3307，右邊維持 3306
+#     volumes:
+#       - db_data:/var/lib/mysql
+#     command: --default-authentication-plugin=mysql_native_password
+
+#     # [新增] 健康檢查：每 5 秒 ping 一次資料庫，確認它真的活著
+#     healthcheck:
+#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#       interval: 5s
+#       timeout: 3s
+#       retries: 10
+#       start_period: 10s
+
+#   # 2. Spring Boot 後端
+#   app:
+#     build: .
+#     container_name: auth2-backend
+#     ports:
+#       - "8080:8080"
+#       # - "8081:8080"  # <--- 修改這裡：左邊改成 8081，右邊維持 8080
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     environment:
+#       # 重要觀念：Spring Boot 連接 DB 是走 Docker 內部網路
+#       # 所以這裡的 port 依然要維持 3306 (容器內部的 port)，不用改成 3307！
+#       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+#       SPRING_DATASOURCE_USERNAME: auth_user
+#       SPRING_DATASOURCE_PASSWORD: auth_password
+#       # [新增] 設定 Spring Boot 容器時區為台灣時間，這樣 LocalDateTime.now() 才會抓到 +8
+#       TZ: Asia/Taipei
+#       # LINE 設定 (建議將 Secret 放在環境變數，不要寫死在 code 裡)
+#       LINE_CHANNEL_ID: "2008702907"
+#       LINE_CHANNEL_SECRET: "9cf2abf8bae6b442693d357b33b236fe" 
+#       LINE_CALLBACK_URL: "http://localhost:5173/callback" 
+
+# volumes:
+#   db_data:
