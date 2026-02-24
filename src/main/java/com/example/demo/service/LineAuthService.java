@@ -68,7 +68,16 @@ public class LineAuthService {
             String displayName = profileRoot.path("displayName").asText();
             String pictureUrl = profileRoot.path("pictureUrl").asText();
             
-            String email = null; // LINE 預設拿不到 Email
+      
+            // 嘗試取得真實 email (需 LINE login 權限設定)，若無則生成虛擬 Email
+            String email = profileRoot.path("email").asText(null);
+            if (email == null || email.isEmpty()) {
+                // 生成格式： {LineID}@line.user
+                email = lineUserId + "@line.user";
+            }
+            // 為了 Lambda 表達式使用 (必須是 final)
+            final String finalEmail = email;
+
 
             // 3. Save User
             User user = userRepository.findByLineId(lineUserId)
@@ -77,27 +86,33 @@ public class LineAuthService {
                         existingUser.setPictureUrl(pictureUrl);
                         existingUser.setLastLoginTime(LocalDateTime.now());
                         existingUser.setProvider(AuthProvider.LINE);
+
+                        // [補充] 如果舊資料的 email 是空的，也幫他補上，不然登入後一樣會壞掉
+                        if (existingUser.getEmail() == null || existingUser.getEmail().isEmpty()) {
+                            existingUser.setEmail(finalEmail);
+                        }
+
                         return existingUser;
                     })
                     .orElseGet(() -> {
-
-                        User newUser = new User(email, displayName, pictureUrl, AuthProvider.LINE);
+                        // 使用 User(email, name, pictureUrl, provider) 建構子
+                        User newUser = new User(finalEmail, displayName, pictureUrl, AuthProvider.LINE);
                         newUser.setLineId(lineUserId);
                         return newUser;
-
-                        // return new User(lineUserId, AuthProvider.LINE, displayName, email, pictureUrl);
                     });
 
             User savedUser = userRepository.save(user);
 
-            // [檢查帳號狀態]
-            if (!savedUser.isActive()) {
-                loginLogRepository.save(new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress,
-                        LoginStatus.FAILURE, "Account Inactive"));
-                // 這是一個 RuntimeException
-                throw new RuntimeException("您的帳號尚未啟用或已被停用，請聯繫管理員");
-            }
+            // 將這段註解調並改道controller裡面去驗證active/inactive, 不然註冊完設定好email會因為跑RuntimeException導致資料沒有成功被存入資料庫
+            // // [檢查帳號狀態]
+            // if (!savedUser.isActive()) {
+            //     loginLogRepository.save(new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress,
+            //             LoginStatus.FAILURE, "Account Inactive"));
+            //     // 這是一個 RuntimeException
+            //     throw new RuntimeException("您的帳號尚未啟用或已被停用，請聯繫管理員");
+            // }
 
+            
             // 4. Log Success
             loginLogRepository.save(
                     new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress, LoginStatus.SUCCESS, "LINE Login Success"));

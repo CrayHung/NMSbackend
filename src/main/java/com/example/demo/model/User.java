@@ -70,7 +70,7 @@ public class User {
         this.role = "USER";
         this.createTime = LocalDateTime.now();
         this.lastLoginTime = LocalDateTime.now();
-        this.active = false; // OAuth 預設停用
+        this.active = false; // OAuth 預設停用 , true的話使用OAuth會直接登入
         this.loginAttempts = 0;
     }
 }

@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-// @CrossOrigin(origins = "http://localhost:5173")   //統一由security管理
+// @CrossOrigin(origins = "http://localhost:5173") //統一由security管理
 public class AuthController {
 
     @Autowired
@@ -45,7 +45,6 @@ public class AuthController {
     @Autowired
     private LocalAuthService localAuthService;
 
-
     // [新增] 開放給外部使用的註冊 API
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
@@ -53,17 +52,16 @@ public class AuthController {
             String name = payload.get("name");
             String email = payload.get("email");
             String password = payload.get("password");
-            
+
             // 呼叫 Service 進行註冊 (Service 內已經會加密密碼了)
             User user = localAuthService.register(name, email, password, "USER");
-            
+
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
         }
     }
 
-    
     // 1. 本地登入
     @PostMapping("/login")
     public ResponseEntity<?> localLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
@@ -86,7 +84,7 @@ public class AuthController {
     public ResponseEntity<?> lineLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
         String code = payload.get("code");
 
-        // 取得 IP 
+        // 取得 IP
         String ipAddress = request.getHeader("X-Forwarded-For");
         if (ipAddress == null || ipAddress.isEmpty()) {
             ipAddress = request.getRemoteAddr();
@@ -99,6 +97,13 @@ public class AuthController {
         try {
             // 傳入 IP
             User user = lineAuthService.lineLogin(code, ipAddress);
+
+            // 2. [新增] 在這裡檢查帳號狀態
+            if (!user.isActive()) {
+                // 回傳 403 禁止訪問，並帶上訊息
+                return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
+            }
+
             // 產生 JWT
             String token = jwtUtils.generateToken(user.getEmail());
             return ResponseEntity.ok(new AuthResponse(token, user));
@@ -121,6 +126,12 @@ public class AuthController {
 
         try {
             User user = googleAuthService.googleLogin(code, redirectUri, ipAddress);
+
+            // [新增] 在這裡檢查帳號狀態
+            if (!user.isActive()) {
+                // 回傳 403 禁止訪問，並帶上訊息
+                return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
+            }
 
             // 產生 JWT
             String token = jwtUtils.generateToken(user.getEmail());
@@ -149,6 +160,13 @@ public class AuthController {
 
         try {
             User user = facebookAuthService.facebookLogin(code, redirectUri, ipAddress);
+        
+            // [新增] 在這裡檢查帳號狀態
+            if (!user.isActive()) {
+                // 回傳 403 禁止訪問，並帶上訊息
+                return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
+            }
+            
             // 產生 JWT
             String token = jwtUtils.generateToken(user.getEmail());
             return ResponseEntity.ok(new AuthResponse(token, user));
@@ -156,7 +174,6 @@ public class AuthController {
             return ResponseEntity.status(500).body("Facebook Login failed: " + e.getMessage());
         }
     }
-
 
     // 取得所有登入紀錄
     @GetMapping("/history")

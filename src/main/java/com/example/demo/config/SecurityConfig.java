@@ -48,6 +48,10 @@ public class SecurityConfig {
             // 設定權限：/api/auth/** 允許所有人，其他都要驗證
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() 
+                .requestMatchers("/api/iot/**").permitAll() 
+                .requestMatchers("/api/users/**").permitAll()
+                .requestMatchers("/api/gateways/**").permitAll()
+                .requestMatchers("/api/amplifier/**").permitAll()
                 .anyRequest().authenticated()
             )
             // 設定 Session 為無狀態 (Stateless)

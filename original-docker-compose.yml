@@ -18,24 +18,15 @@ services:
       # 這裡必須填「使用者瀏覽器」看到的 Nginx 入口網址，也就是 9080 Port
       LINE_CALLBACK_URL: "http://twowayiot.com:9080/callback"
       
-      # Facebook 需要完整路徑...
-      # 不行!! FB Google都不接受http和port號的URL
+      # Facebook 需要完整路徑
       FACEBOOK_REDIRECT_URI: "http://twowayiot.com:9080/auth/facebook/callback"
       
       # Google 若在 application.properties 沒設變數，這裡不用加，
       # 但您的 Java Code 是讀取前端傳來的 redirectUri，所以後端這裡主要是為了 LINE。
 
-      # 注入環境變數覆寫 , 讓docker去決定此時環境下去複寫application.properties 的內容
-      DB_HOST: db  # 讓容器連向 db 服務名稱
-      DB_PORT: 3306
-      CHIRPSTACK_HOST: 192.168.1.220 # 遠端環境的 ChirpStack IP
-
   db:
     image: mysql:8.0
     restart: always
-    # 在遠端主機上執行的話,這個 ports:- "3307:3306"要註解
-    ports:
-      - "3307:3306"  # 將本機的 3307 映射到容器內的 3306
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: auth_db
