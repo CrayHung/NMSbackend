@@ -3,6 +3,8 @@
  */
 package com.example.demo.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.chirpstack.api.ApplicationServiceGrpc;
 import io.chirpstack.api.DeviceServiceGrpc;
 import io.chirpstack.api.GatewayServiceGrpc;
@@ -34,6 +36,16 @@ public class ChirpStackConfig {
         return ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext() // 若 ChirpStack 未開啟 TLS 則使用純文本
                 .build();
+    }
+
+    /**
+     * 手動定義 ObjectMapper Bean 解決注入失敗問題
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule()); // 支援 Java 8 時間格式
+        return mapper;
     }
 
     /**

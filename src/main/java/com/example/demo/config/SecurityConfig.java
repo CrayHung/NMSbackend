@@ -52,6 +52,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/api/gateways/**").permitAll()
                 .requestMatchers("/api/amplifier/**").permitAll()
+
+                .requestMatchers("/api/test/**").permitAll()
                 
                 .requestMatchers("/ws-monitoring/**").permitAll() // 允許 WebSocket 握手
                 .anyRequest().authenticated()
