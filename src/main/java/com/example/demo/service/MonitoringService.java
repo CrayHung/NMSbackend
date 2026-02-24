@@ -20,5 +20,6 @@ public class MonitoringService {
         // 前端將訂閱此路徑：/topic/device/{devEui}
         String destination = "/topic/device/" + devEui;
         messagingTemplate.convertAndSend(destination, (Object) data);
+        
     }
 }
