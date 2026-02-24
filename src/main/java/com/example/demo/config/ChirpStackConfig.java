@@ -1,6 +1,11 @@
+/**
+ * 只負責生產單一個 ManagedChannel 和 Stubs (Bean)
+ */
 package com.example.demo.config;
 
-import io.chirpstack.api.*;
+import io.chirpstack.api.ApplicationServiceGrpc;
+import io.chirpstack.api.DeviceServiceGrpc;
+import io.chirpstack.api.GatewayServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -12,22 +17,28 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ChirpStackConfig {
 
-    @Value("${chirpstack.host:localhost}")
+    @Value("${chirpstack.host}")
     private String host;
 
-    @Value("${chirpstack.port:8080}")
+    @Value("${chirpstack.port}")
     private int port;
 
-    @Value("${chirpstack.api-token:}")
+    @Value("${chirpstack.api-token}")
     private String apiToken;
 
+    /**
+     * 建立全域唯一的 gRPC 通道
+     */
     @Bean
     public ManagedChannel managedChannel() {
         return ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext()
+                .usePlaintext() // 若 ChirpStack 未開啟 TLS 則使用純文本
                 .build();
     }
 
+    /**
+     * 封裝 API Token 的 Header
+     */
     private Metadata getAuthHeader() {
         Metadata header = new Metadata();
         Metadata.Key<String> key = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -37,7 +48,6 @@ public class ChirpStackConfig {
 
     @Bean
     public GatewayServiceGrpc.GatewayServiceBlockingStub gatewayStub(ManagedChannel channel) {
-        // 修正後的注入方式
         return GatewayServiceGrpc.newBlockingStub(channel)
                 .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(getAuthHeader()));
     }

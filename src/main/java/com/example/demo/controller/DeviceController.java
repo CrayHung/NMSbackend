@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.DeviceStatusLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,9 @@ public class DeviceController {
     @Autowired
     private DeviceService deviceService;
 
+    /**
+     * 獲取特定 Application 下的所有裝置列表
+     */
     @GetMapping("/devices")
     public ResponseEntity<List<Map<String, Object>>> getDevices(@RequestParam String applicationId) {
         return ResponseEntity.ok(deviceService.getDevicesByApplication(applicationId));
@@ -24,25 +28,18 @@ public class DeviceController {
     @PutMapping("/{devEui}")
     public ResponseEntity<?> update(@PathVariable String devEui, @RequestBody DeviceConfigDto dto) {
         deviceService.updateDevice(devEui, dto);
-        return ResponseEntity.ok(Map.of("message", "Device updated successfully"));
+        return ResponseEntity.ok(Map.of("message", "Update command sent"));
     }
 
     /**
-     * 取得 Amplifier 歷史狀態紀錄 API
-     * 路徑: /api/amplifier/status/{deviceEui}/history
-     * * @param devEui 裝置 EUI (路徑參數)
-     * 
-     * @param start 開始時間 (Query 參數, 選填)
-     * @param end   結束時間 (Query 參數, 選填)
+     * 從 MySQL 取得裝置的歷史狀態紀錄
+     * 範例: /api/amplifier/status/EUI123/history?start=2026-02-01T00:00:00&end=2026-02-02T23:59:59
      */
     @GetMapping("/status/{devEui}/history")
-    public ResponseEntity<List<AmplifierHistoryDto>> getHistory(
-            @PathVariable String deviceEui,
+    public ResponseEntity<List<DeviceStatusLog>> getHistory(
+            @PathVariable String devEui,
             @RequestParam(required = false) String start,
             @RequestParam(required = false) String end) {
-
-        // 呼叫 Service 取得歷史資料
-        List<AmplifierHistoryDto> result = deviceService.getAmplifierHistory(deviceEui, start, end);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(deviceService.getDeviceHistory(devEui, start, end));
     }
 }

@@ -1,13 +1,21 @@
+/*
+ * (業務邏輯)：處理資料庫 (MySQL) 與 ChirpStack 資料的整合。
+ * 例如：當 DeviceService 獲取裝置時，它會先查 DB 獲取自定義名稱，再調用 ChirpStackService 獲取即時狀態。
+ */
 package com.example.demo.service;
 
-import io.chirpstack.api.*;
-import com.example.demo.dto.DeviceConfigDto;
+import io.chirpstack.api.Device;
+import io.chirpstack.api.DeviceListItem;
+import com.example.demo.repository.DeviceStatusLogRepository;
+
 import com.example.demo.dto.AmplifierHistoryDto;
+import com.example.demo.dto.DeviceConfigDto;
+import com.example.demo.model.DeviceStatusLog;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -15,20 +23,19 @@ import java.util.*;
 public class DeviceService {
 
     @Autowired
-    private DeviceServiceGrpc.DeviceServiceBlockingStub deviceStub;
+    private ChirpStackService chirpStackService;
 
-    private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_INSTANT;
+    @Autowired
+    private MonitoringService monitoringService;
+
+    @Autowired
+    private DeviceStatusLogRepository statusLogRepository;
 
     /**
-     * 取得應用程式下的裝置列表
+     * 獲取裝置列表並封裝為前端格式
      */
     public List<Map<String, Object>> getDevicesByApplication(String applicationId) {
-        ListDevicesRequest request = ListDevicesRequest.newBuilder()
-                .setApplicationId(applicationId)
-                .setLimit(100)
-                .build();
-
-        ListDevicesResponse response = deviceStub.list(request);
+        var response = chirpStackService.listDevices(applicationId);
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (DeviceListItem item : response.getResultList()) {
@@ -36,26 +43,21 @@ public class DeviceService {
             map.put("devEui", item.getDevEui());
             map.put("name", item.getName());
             map.put("description", item.getDescription());
-
-            if (item.hasLastSeenAt()) {
-                map.put("lastSeen", isoFormatter.format(Instant.ofEpochSecond(
-                        item.getLastSeenAt().getSeconds(), item.getLastSeenAt().getNanos())));
-            } else {
-                map.put("lastSeen", null);
-            }
+            map.put("status", item.hasLastSeenAt() ? "Online" : "Offline");
             result.add(map);
         }
         return result;
     }
 
     /**
-     * 更新裝置配置 (原本 ChirpStackService 的邏輯)
+     * 更新裝置設定並發送 WebSocket 通知
      */
     public void updateDevice(String devEui, DeviceConfigDto dto) {
-        GetDeviceResponse getResp = deviceStub.get(GetDeviceRequest.newBuilder().setDevEui(devEui).build());
-        Device current = getResp.getDevice();
-
+        // 1. 取得現有資料
+        Device current = chirpStackService.getDevice(devEui).getDevice();
         Device.Builder builder = current.toBuilder();
+
+        // 2. 根據 DTO 更新
         if (dto.getName() != null)
             builder.setName(dto.getName());
         if (dto.getDescription() != null)
@@ -67,45 +69,29 @@ public class DeviceService {
         if (dto.getSkipFcntCheck() != null)
             builder.setSkipFcntCheck(dto.getSkipFcntCheck());
 
-        deviceStub.update(UpdateDeviceRequest.newBuilder().setDevice(builder.build()).build());
+        // 3. 呼叫底層更新
+        chirpStackService.updateDevice(builder.build());
+
+        // 4. 即時推播更新狀態給前端
+        monitoringService.sendDeviceUpdate(devEui, Map.of(
+                "event", "CONFIG_UPDATED",
+                "timestamp", System.currentTimeMillis(),
+                "status", "Pending Ack"));
     }
 
-
-    
     /**
-     * 取得 Amplifier 歷史紀錄
-     * 參考 ChirpStack v4.13.0 GetDevice 邏輯
+     * 從 MySQL 取得裝置的歷史狀態紀錄
      */
-    public List<AmplifierHistoryDto> getAmplifierHistory(String devEui, String start, String end) {
-        // 1. 先從 ChirpStack 獲取裝置目前的靜態資訊 (如 HW/FW 版本)
-        GetDeviceRequest getReq = GetDeviceRequest.newBuilder()
-                .setDevEui(devEui)
-                .build();
-        GetDeviceResponse getResp = deviceStub.get(getReq);
-        Device device = getResp.getDevice();
+    // 真實歷史資料查詢 (含時間區間)
+    public List<DeviceStatusLog> getDeviceHistory(String devEui, String startStr, String endStr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
-        // 2. 準備回傳清單 (實務上這裡會從資料庫 SELECT * WHERE dev_eui = ... AND created_at BETWEEN
-        // ...)
-        List<AmplifierHistoryDto> historyList = new ArrayList<>();
+        // 若前端沒傳時間，預設查過去 24 小時
+        LocalDateTime start = (startStr != null) ? LocalDateTime.parse(startStr, formatter)
+                : LocalDateTime.now().minusDays(1);
+        LocalDateTime end = (endStr != null) ? LocalDateTime.parse(endStr, formatter) : LocalDateTime.now();
 
-        // 模擬一筆從資料來源轉換而來的數據
-        AmplifierHistoryDto record = new AmplifierHistoryDto();
-        record.setDeviceEui(devEui);
-        record.setCreatedAt(start != null ? start : "2026-02-23T06:58:51.335Z");
-
-        // 帶入來自 ChirpStack Device 物件的資訊
-        record.setPartName(device.getName());
-        record.setSerialNumber(devEui); // 通常 DevEUI 即為 SN 或在 Tags 內
-
-        // 模擬數據欄位填充
-        record.setTemperature(45.2);
-        record.setVoltage(24.0);
-        record.setRfOutputPower(15.5);
-        record.setUnitStatus(1);
-        record.setStatusText("Operating");
-
-        historyList.add(record);
-
-        return historyList;
+        return statusLogRepository.findByDevEuiAndCreatedAtBetweenOrderByCreatedAtDesc(devEui, start, end);
     }
+
 }

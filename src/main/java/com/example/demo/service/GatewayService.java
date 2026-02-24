@@ -1,3 +1,7 @@
+/*
+ * (業務邏輯)：處理資料庫 (MySQL) 與 ChirpStack 資料的整合。
+ * 例如：當 DeviceService 獲取裝置時，它會先查 DB 獲取自定義名稱，再調用 ChirpStackService 獲取即時狀態。
+ */
 package com.example.demo.service;
 
 import com.google.protobuf.Timestamp;
@@ -33,6 +37,7 @@ public class GatewayService {
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_INSTANT;
 
     /**
+     * 
      * 獲取特定網關下的設備列表 (模擬舊有服務)
      * GET /api/gateways/{gatewayId}/devices
      */
@@ -102,6 +107,8 @@ public class GatewayService {
         return lastSeen.isAfter(java.time.Instant.now().minusSeconds(300));
     }
 
+
+
     /**
      * 獲取網關統計指標
      * 
@@ -144,7 +151,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 將 gRPC Response 轉換為前端巢狀 DTO
+     * 
      */
     private GatewayMetricsResponseDTO convertToDTO(GetGatewayMetricsResponse response) {
         GatewayMetricsResponseDTO dto = new GatewayMetricsResponseDTO();
@@ -162,7 +171,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 輔助方法：處理單一 Metric 轉換
+     * 
      */
     private GatewayMetricsResponseDTO.MetricSet mapToMetricSet(Metric metric, String displayName) {
         GatewayMetricsResponseDTO.MetricSet set = new GatewayMetricsResponseDTO.MetricSet();
@@ -199,7 +210,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 獲取所有 Gateways (對齊舊服務指定的 JSON 結構)
+     * 
      */
     public Map<String, Object> listGatewaysWithMapFormat() {
         ListGatewaysRequest request = ListGatewaysRequest.newBuilder()
@@ -254,7 +267,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 獲取詳情 (Dashboard 專用)
+     * 
      */
     public GatewayDetailDTO getGatewayDetail(String id) {
         GetGatewayResponse resp = gatewayStub.get(GetGatewayRequest.newBuilder().setGatewayId(id).build());
@@ -287,7 +302,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 建立網關 (對接舊服務 POST Body 格式)
+     * 
      */
     public void createGateway(GatewayDetailDTO dto) {
 
@@ -314,7 +331,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 更新網關
+     * 
      */
     public void updateGateway(String id, GatewayDetailDTO dto) {
         GetGatewayResponse resp = gatewayStub.get(GetGatewayRequest.newBuilder().setGatewayId(id).build());
@@ -337,14 +356,18 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 刪除網關
+     * 
      */
     public void deleteGateway(String id) {
         gatewayStub.delete(DeleteGatewayRequest.newBuilder().setGatewayId(id).build());
     }
 
     /**
+     * 
      * 獲取封包日誌 (模擬數據)
+     * 
      */
     public List<FrameLogDTO> getFrameLogs(String id) {
         FrameLogDTO f = new FrameLogDTO();
@@ -359,7 +382,9 @@ public class GatewayService {
 
     
     /**
+     * 
      * 獲取整合網關詳情與設備清單的完整物件 (真實數據版本)
+     * 
      */
     public Map<String, Object> getGatewayFullDetails(String gatewayId) {
         Map<String, Object> finalResponse = new HashMap<>();
@@ -409,7 +434,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 輔助方法：呼叫 gRPC 取得設備最新的指標數據
+     * 
      */
     private Map<String, Double> getLatestDeviceMetrics(String devEui) {
         Map<String, Double> metricsResult = new HashMap<>();
@@ -447,7 +474,9 @@ public class GatewayService {
     }
 
     /**
+     * 
      * 輔助方法：封裝 Gateway Map
+     * 
      */
     private Map<String, Object> buildGatewayMap(GatewayDetailDTO detail) {
         Map<String, Object> gwMap = new HashMap<>();
