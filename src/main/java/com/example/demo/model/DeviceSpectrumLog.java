@@ -14,7 +14,7 @@ public class DeviceSpectrumLog {
     @Column(name = "dev_eui", length = 50)
     private String devEui;
 
-    // 將 List<Double> 轉成 JSON 字串儲存 (例如: "[34.0, 35.1, ...]")
+
     @Column(name = "power_values", columnDefinition = "JSON")
     private String powerValuesJson; 
 
@@ -24,7 +24,7 @@ public class DeviceSpectrumLog {
     @PrePersist
     protected void onCreate() { this.createdAt = LocalDateTime.now(); }
 
-    // --- Getters & Setters ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getDevEui() { return devEui; }

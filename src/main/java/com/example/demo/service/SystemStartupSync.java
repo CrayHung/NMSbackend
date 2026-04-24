@@ -12,7 +12,7 @@ public class SystemStartupSync {
     private GatewayService gatewayService;
 
     /**
-     * 當應用程式啟動完成後，自動執行一次全同步
+     * 當應用程式啟動完成後  自動執行一次全同步
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {

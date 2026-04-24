@@ -37,7 +37,7 @@ public class SecurityConfig {
                 //     "http://61.216.140.11:9080" // <--- 加上 Nginx 的入口 Port
                 // ));
 
-                // 或者直接全開：
+                // 或者直接全開
                 config.setAllowedOriginPatterns(List.of("*"));
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
@@ -54,13 +54,13 @@ public class SecurityConfig {
 
                 .requestMatchers("/api/test/**").permitAll()
                 
-                .requestMatchers("/ws-monitoring/**").permitAll() // 允許 WebSocket 握手
+                .requestMatchers("/ws-monitoring/**").permitAll()
                 .anyRequest().authenticated()
             )
-            // 設定 Session 為無狀態 (Stateless)
+       
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // 加入 JWT Filter
+        // JWT Filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

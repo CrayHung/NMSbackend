@@ -1,4 +1,3 @@
-// Enum: LINE, GOOGLE, FACEBOOK
 package com.example.demo.model;
 
 public enum AuthProvider {

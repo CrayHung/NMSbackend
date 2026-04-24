@@ -17,7 +17,6 @@ public class DeviceConfigLog {
     @Column(name = "log_type", length = 20)
     private String logType; // "INFO_01" 或 "SETTINGS_02"
 
-    // 將解析出來的各項參數包成一個 JSON 存起來，保持表結構彈性
     @Column(name = "config_data", columnDefinition = "JSON")
     private String configDataJson;
 
@@ -27,7 +26,7 @@ public class DeviceConfigLog {
     @PrePersist
     protected void onCreate() { this.createdAt = LocalDateTime.now(); }
 
-    // --- Getters & Setters 略 (請自行補上) ---
+
     public void setDevEui(String devEui) { this.devEui = devEui; }
     public void setLogType(String logType) { this.logType = logType; }
     public void setConfigDataJson(String configDataJson) { this.configDataJson = configDataJson; }

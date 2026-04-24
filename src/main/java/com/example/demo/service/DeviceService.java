@@ -38,7 +38,7 @@ public class DeviceService {
 
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_INSTANT;
 
-    // 防洪紀錄表 (紀錄 DevEUI -> 上次請求同步的 Timestamp)
+    // 紀錄 DevEUI -> 上次請求同步的 Timestamp
     private final ConcurrentHashMap<String, Long> syncCooldownMap = new ConcurrentHashMap<>();
     private static final long COOLDOWN_MS = 1 * 60 * 1000; // 1 分鐘冷卻時間
 
@@ -82,7 +82,7 @@ public class DeviceService {
                 missingSettings = true;
             }
         } else {
-            // 資料庫連這台設備都沒有  全部都缺
+            // 資料庫沒有這台設備全部都缺
             missingBasicInfo = true;
             missingSettings = true;
         }
@@ -253,17 +253,16 @@ public class DeviceService {
     }
 
     /**
-     * 清空 Queue (過渡期機制)
-     * 避免誤殺正在排隊的頻譜掃描等  需要長時間執行的指令
+     * 清空 Queue 過渡期
+     * 避免誤殺正在排隊的頻譜掃描等 需要長時間執行的指令
      */
     private void safeFlushQueue(String devEui) {
-        // 如果未來硬體上線  開關被關閉這裡直接 Return 無痛移除機制
+    
         if (!enableFlushQueueWorkaround) {
             return;
         }
 
         try {
-            // 取得目前 Queue 裡的積壓指令
             GetDeviceQueueItemsResponse queueResp = deviceStub.getQueue(
                     GetDeviceQueueItemsRequest.newBuilder().setDevEui(devEui).build());
 
@@ -273,7 +272,6 @@ public class DeviceService {
             for (DeviceQueueItem item : queueResp.getResultList()) {
                 String hexCmd = bytesToHex(item.getData().toByteArray()).toUpperCase();
 
-                // 檢查是否包含頻譜指令表頭 (40010104 ~ 40010109)
                 if (hexCmd.startsWith("40010104") || hexCmd.startsWith("40010105") ||
                         hexCmd.startsWith("40010106") || hexCmd.startsWith("40010107") ||
                         hexCmd.startsWith("40010108") || hexCmd.startsWith("40010109")) {
@@ -287,7 +285,7 @@ public class DeviceService {
                 deviceStub.flushQueue(FlushDeviceQueueRequest.newBuilder().setDevEui(devEui).build());
                 // System.out.println(" [過渡期機制] 已安全清空設備 " + devEui + " 的積壓 Queue");
             } else {
-                System.out.println(" [過渡期保護] 設備 " + devEui + " Queue 內包含頻譜掃描指令，跳過 Flush 動作！");
+                System.out.println(" [過渡期保護] 設備 " + devEui + " Queue 內包含頻譜掃描指令 跳過 Flush 動作");
             }
 
         } catch (Exception e) {
@@ -434,14 +432,14 @@ public class DeviceService {
         // 表頭 40 01 01 0A 02
         byte[] header = new byte[] { 0x40, 0x01, 0x01, 0x0A, 0x02 };
 
-        // CobsCodec.java 中結尾的 0x00 被註解掉了，我們在此處手動補上
+        // CobsCodec.java 中結尾的 0x00 被註解掉了 我們在此處手動補上
         byte[] finalPayload = new byte[header.length + cobsEncoded.length + 1];
 
         System.arraycopy(header, 0, finalPayload, 0, header.length);
         System.arraycopy(cobsEncoded, 0, finalPayload, header.length, cobsEncoded.length);
         finalPayload[finalPayload.length - 1] = 0x00; // 結尾補 0x00
 
-        // 轉成 HEX 字串並丟進 ChirpStack Queue (FPort 固定為 10)
+        // 轉成 HEX 字串並丟進 ChirpStack Queue 
         String hexString = bytesToHex(finalPayload);
         System.out.printf("準備下發設定指令 [Index 0x%02X] 數值: %.1f ℃ | Payload: %s%n", hexIndex, tempValue, hexString);
         enqueueDownlink(devEui, 10, hexString, 60); 
@@ -455,7 +453,7 @@ public class DeviceService {
      ******************************************************/
     public void updateDeviceLocation(String devEui, Double lat, Double lon) {
         try {
-            // 格式化字串並補齊至 39 Bytes (補空白 0x20)
+            // 格式化字串並補齊至39Bytes 補空白 0x20
             String coordStr = String.format("%.10f, %.10f", lat, lon);
             // 確保長度精確為 39 bytes
             StringBuilder sb = new StringBuilder(coordStr);
@@ -491,7 +489,7 @@ public class DeviceService {
             enqueueDownlink(devEui, 10, hexString, 120);
 
 
-            // 同步寫入 MySQL 這樣地圖才抓得到座標
+            // 同步寫入MySQL 這樣地圖才抓得到座標
             deviceRepository.findById(devEui).ifPresent(device -> {
                 device.setLatitude(String.valueOf(lat));
                 device.setLongitude(String.valueOf(lon));
@@ -511,19 +509,16 @@ public class DeviceService {
      *******************************************************/
     public void updateDeviceAddress(String devEui, String address) {
         try {
-            // 轉換為 UTF-16LE
-            // 0x32 0x00 ('2')確認為 LittleEndian
+            // 轉換為 UTF-16LE 0x32 0x00 ('2')確認為 LittleEndian
             byte[] utf16Bytes = address.getBytes(java.nio.charset.StandardCharsets.UTF_16LE);
 
-            // 準備 96 bytes 容器並預填空白 
-            //UTF-16LE 的空白是 0x20 0x00
+            // 準備 96 bytes 容器並預填空白   UTF-16LE 的空白是 0x20 0x00
             byte[] paddedData = new byte[96];
             for (int i = 0; i < 96; i += 2) {
                 paddedData[i] = 0x20;
                 paddedData[i + 1] = 0x00;
             }
 
-            // 將地址內容複製進去 取最小值避免字串過長溢出
             int lengthToCopy = Math.min(utf16Bytes.length, 96);
             System.arraycopy(utf16Bytes, 0, paddedData, 0, lengthToCopy);
 
@@ -532,8 +527,8 @@ public class DeviceService {
             baseCmd[0] = (byte) 0xB0;
             baseCmd[1] = 0x10;
             baseCmd[2] = 0x00;
-            baseCmd[3] = (byte) 0x90; // 地址文字屬於 0x90 通道
-            baseCmd[4] = 0x33; // 地址文字的 Hex Index 是 0x33
+            baseCmd[3] = (byte) 0x90; 
+            baseCmd[4] = 0x33; 
             System.arraycopy(paddedData, 0, baseCmd, 5, 96);
 
             // 進行 COBS 編碼
@@ -573,12 +568,11 @@ public class DeviceService {
 
     /********************************************************
      * 頻譜掃描專用的下發方法  強制清空 Queue
-     * 因為前端已經實作了等待回傳才發下一個的邏輯
-     * 所以這裡只要收到新請求 就代表舊的已經超時或完成了 可以直接清空舊 Queue
+     * 這裡只要收到新請求 就代表舊的已經超時或完成了 可以直接清空舊 Queue
     *******************************************************/
     public String enqueueSpectrumDownlink(String devEui, int fPort, String hexPayload, long ttlSeconds) {
 
-        // 1無視 safeFlushQueue 直接強制清空
+        // 無視 safeFlushQueue 直接強制清空
         try {
             deviceStub.flushQueue(FlushDeviceQueueRequest.newBuilder().setDevEui(devEui).build());
             System.out.println(" [頻譜掃描通道] 已強制清空設備 " + devEui + " 的 Queue");

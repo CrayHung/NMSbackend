@@ -115,14 +115,14 @@ public class UserController {
             user.setEmail((String) payload.get("email"));
         }
         
-        // 加入 Active 狀態更新邏輯
+   
         if (payload.containsKey("active")) {
-            // 前端 JSON boolean 會自動對應成 Boolean 物件
+
             Object activeVal = payload.get("active");
             if (activeVal instanceof Boolean) {
                 user.setActive((Boolean) activeVal);
                 
-                // 如果管理員啟用了帳號，順便清除之前的鎖定狀態 讓他可以立刻登入
+                // 如果管理員啟用了帳號 清除之前的鎖定狀態 讓他可以立刻登入
                 if ((Boolean) activeVal) {
                     user.setLoginAttempts(0);
                     user.setLockTime(null);

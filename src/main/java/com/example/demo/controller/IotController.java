@@ -32,12 +32,12 @@ public class IotController {
     private DeviceService deviceService;
 
     @Autowired
-    private DeviceRepository deviceRepository; // 用於動態綁定gateway
+    private DeviceRepository deviceRepository; 
 
 
     // ==========================================
     // 全域地圖拓撲資料 (Map Topology)
-    // 在GatewayService.java 實作聚合邏輯
+    // 在GatewayService.java 實作
     // ==========================================
     @GetMapping("/dashboard/map-data")
     public ResponseEntity<?> getGlobalMapTopology() {
@@ -55,8 +55,8 @@ public class IotController {
     // ==========================================
     @GetMapping("/alarms/active")
     public ResponseEntity<List<DeviceEntity>> getActiveAlarms() {
-        // 假設你使用 JPA，在 DeviceRepository 中新增 findByUnitStatusNot(1)
-        // 這裡回傳目前 unitStatus 不是 1 (Normal) 的所有設備
+
+        // 回傳unitStatus 不是 1 (非正常)
         List<DeviceEntity> activeAlarms = deviceRepository.findByUnitStatusNot(1);
         return ResponseEntity.ok(activeAlarms);
     }
@@ -78,10 +78,9 @@ public class IotController {
     // ==========================================
     @GetMapping("/applications")
     public ResponseEntity<List<ChirpStackApp>> getApplications() {
-        // return ResponseEntity.ok(applicationService.getAllFromLocal());
 
         List<ChirpStackApp> apps = applicationService.getAllFromLocal();
-        // 如果資料庫是空的，就自動觸發同步！
+        // 如果資料庫是空的就自動同步
         if (apps.isEmpty()) {
             apps = applicationService.syncFromChirpStack();
         }
@@ -136,7 +135,7 @@ public class IotController {
                 ));
             }
 
-            // 呼叫 Service 更新 ChirpStack
+            // 更新 ChirpStack
             gatewayService.updateGatewayLocation(gatewayId, latitude, longitude);
 
             return ResponseEntity.ok(Map.of(
@@ -182,7 +181,7 @@ public class IotController {
 
     /** ==========================================
      * 01+02
-     * 取得單一設備的「全聚合詳細資訊」 (適用於前端設備總覽/儀表板頁面) 
+     * 取得單一設備的全部詳細資訊 
      ==========================================*/
     @GetMapping("/devices/{devEui}/detail")
     public ResponseEntity<DeviceDetailResponseDto> getDeviceAggregatedDetail(@PathVariable String devEui) {
@@ -212,7 +211,6 @@ public class IotController {
 
     // ==========================================
     // 下發03即時數據指令
-    // 啟動即時監控 API
     // ==========================================
     @PostMapping("/devices/{devEui}/start-monitor")
     public ResponseEntity<?> startDeviceMonitor(@PathVariable String devEui) {
@@ -247,7 +245,6 @@ public class IotController {
                         "message", "錯誤：請至少提供 tempHigh 或 tempLow 參數"));
             }
 
-            // 呼叫 Service 執行下發
             deviceService.updateDeviceTempAlarms(devEui, tempHigh, tempLow);
 
             return ResponseEntity.ok(Map.of(
@@ -265,7 +262,7 @@ public class IotController {
 
 
     /**==========================================
-     * 設定device實體座標 (寫入硬體 EEPROM)
+     * 設定device實體座標
      * JSON: { "latitude": 24.8123, "longitude": 121.0123 }
      ==========================================*/
      @PostMapping("/devices/{devEui}/location")
@@ -341,10 +338,8 @@ public class IotController {
 
 
 
-
-
     // ==========================================
-    //  共用核心邏輯：處理 2 Bytes 設定值的通用方法
+    //  處理 2 Bytes 設定值的通用方法
     // ==========================================
     private ResponseEntity<?> processTwoByteSettingCommand(String devEui, byte settingIndex, Double targetValue,
             String settingName) {
@@ -360,7 +355,7 @@ public class IotController {
             byte[] rawCmd = new byte[] {
                     (byte) 0xB0, (byte) 0x10, (byte) 0x00, (byte) 0x90,
                     settingIndex, // 帶入該設定項目的專屬 Index
-                    (byte) (rawValue & 0xFF), // 低位元 (Little-Endian)
+                    (byte) (rawValue & 0xFF), // 低位元 Little-Endian
                     (byte) ((rawValue >> 8) & 0xFF) // 高位元
             };
 
@@ -373,7 +368,7 @@ public class IotController {
             System.out.printf("準備下發 [%s] 給設備 %s, 目標值: %.1f, Hex: %s%n",
                     settingName, devEui, targetValue, hexPayload);
 
-            // 透過 DeviceService 送進 ChirpStack Queue (使用 FPort 10)
+            // 送進 ChirpStack Queue
             String messageId = deviceService.enqueueDownlink(devEui, 10, hexPayload, 60);// 60秒過期
 
             return ResponseEntity.ok(Map.of(
@@ -417,17 +412,14 @@ public class IotController {
         // ==========================================
         int commandId = 4 + (type * 3) + (part - 1);
 
-        // 直接組合出 40010104 ~ 40010109 的 HEX 字串 (不需要再經過 COBS 編碼！)
+        // 直接組合出 40010104 ~ 40010109 的 HEX 字串 
         String hexPayload = String.format("4001010%d", commandId);
 
         System.out.printf(" 準備下發 [頻譜掃描 Type:%d Part:%d] 給設備 %s, 指令代號: %d, Hex: %s%n",
                 type, part, devEui, commandId, hexPayload);
 
         try {
-            // 直接將正確的 HEX 送進 ChirpStack Queue (FPort 10)
-            // String messageId = deviceService.enqueueDownlink(devEui, 10, hexPayload, 60); // 1分鐘過期
-            
-            // 這裡改用 enqueueSpectrumDownlink 並且把 TTL 設為 60 秒
+            // 改用 enqueueSpectrumDownlink 並且把 TTL 設為 60 秒
             String messageId = deviceService.enqueueSpectrumDownlink(devEui, 10, hexPayload, 60);
             
             return ResponseEntity.ok(Map.of(

@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class CobsCodec {
 
-    
+
     public static byte[] encode(byte[] input) {
         byte[] output = new byte[input.length + 2];
         int read_index = 0;
@@ -30,7 +30,7 @@ public class CobsCodec {
         }
         output[code_index] = (byte) code;
 
-        //註解或刪除這行   LoRaWAN封包不需要結尾的 0x00 設備內部UART會自己補
+        //註解或刪除這行   LoRaWAN封包不需要結尾的 0x00 設備
         // output[write_index++] = 0x00; // 結尾補 0x00
 
         return Arrays.copyOf(output, write_index);

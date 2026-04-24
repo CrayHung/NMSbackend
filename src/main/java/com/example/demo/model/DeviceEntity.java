@@ -21,28 +21,28 @@ public class DeviceEntity {
     private String partName;     // 設備名稱
     private String partNumber;   // 型號
     private String serialNumber; // 序號
-    private String hwVersion;    // 硬體版本 (新增)
+    private String hwVersion;    // 硬體版本
     private String fwVersion;    // 韌體版本
-    private String mfgDate;      // 製造日期 (新增)
-    private Integer partIndex;   // Part Index (新增)
+    private String mfgDate;      // 製造日期 
+    private Integer partIndex;   // Part Index 
     
-    // 地理位置 (由 01 指令解析)
+    // 地理位置
     private String latitude;
     private String longitude;
     
     // ==========================================
     // 02 設定參數 (Setting Data) - 警報門檻
     // ==========================================
-    private Double tempHighAlarm;    // 溫度高警報 (℃)
-    private Double tempLowAlarm;     // 溫度低警報 (℃)
-    private Double voltHighAlarm;    // 電壓高警報 (V)
-    private Double voltLowAlarm;     // 電壓低警報 (V)
-    private Integer rippleHighAlarm; // 漣波高警報 (mV) (新增)
-    private Double rfOutputHighAlarm; // RF 輸出高警報 (0.1dBmV)
-    private Double rfOutputLowAlarm;  // RF 輸出低警報 (0.1dBmV) (新增)
+    private Double tempHighAlarm;    // 溫度高警報
+    private Double tempLowAlarm;     // 溫度低警報
+    private Double voltHighAlarm;    // 電壓高警報
+    private Double voltLowAlarm;     // 電壓低警報
+    private Integer rippleHighAlarm; // ripple高警報
+    private Double rfOutputHighAlarm; // RF 輸出高警報 
+    private Double rfOutputLowAlarm;  // RF 輸出低警報
 
     // ==========================================
-    // 02 設定參數 (Setting Data) - 進階系統設定
+    // 02 設定參數 (Setting Data) - 
     // ==========================================
     private Integer rtnIngress1;      // RTN Ingress (Port 2/4)
     private Integer rtnIngress2;      // RTN Ingress (Port 3)
@@ -74,9 +74,7 @@ public class DeviceEntity {
     private Integer maskRipple;
     private Integer maskRfOutPwr;
 
-    // ==========================================
-    // 02 設定參數 (Setting Data) - PAD 與 EQ
-    // ==========================================
+
     private Double port1FwdInputPad;
     private Double port1FwdInputEq;
     private Double portNRevInputPad1;
@@ -90,8 +88,8 @@ public class DeviceEntity {
     private Double portNFwdOutputEq2;
 
     @Column(length = 255)
-    private String locationAddress;  // UTF-16 安裝地址字串
-    private Integer logIntervalMin;  // 系統紀錄頻率 (分鐘)
+    private String locationAddress;  // 地址字串
+    private Integer logIntervalMin;  // 系統紀錄頻率
 
     // ==========================================
     // 系統運作與網路屬性

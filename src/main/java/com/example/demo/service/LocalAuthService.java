@@ -67,7 +67,7 @@ public class LocalAuthService {
         // 檢查帳號狀態
         checkAccountStatus(user);
 
-        // 驗證密碼
+        // 驗證
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             handleLoginFailure(user);
             logFailure(user.getId(), user.getName(), ipAddress, "Wrong password");

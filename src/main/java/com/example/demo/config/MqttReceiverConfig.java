@@ -51,7 +51,7 @@ public class MqttReceiverConfig {
         options.setServerURIs(new String[] { brokerUrl });
         options.setCleanSession(true);
         options.setAutomaticReconnect(true);
-        System.out.println("準備連線的 MQTT 網址是: " + brokerUrl);
+        // System.out.println("準備連線的 MQTT 網址是: " + brokerUrl);
         // 如果 application.properties 有設定帳號密碼，則套用
         if (username != null && !username.isEmpty()) {
             options.setUserName(username);
@@ -70,7 +70,7 @@ public class MqttReceiverConfig {
         return new DirectChannel();
     }
 
-    // 設定接收器 Adapter，綁定 Topic 與 Channel
+    // 設定接收器 Adapter  綁定 Topic 與 Channel
     @Bean
     public MessageProducer inbound() {
         MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(clientId,
@@ -94,9 +94,6 @@ public class MqttReceiverConfig {
 
             String receivedTopic = (String) message.getHeaders().get("mqtt_receivedTopic");
             
-            // Debug 
-            // System.out.println("[MQTT] 收到來自 Topic: " + receivedTopic + " 的訊息");
-
             try {
                 JsonNode rootNode = objectMapper.readTree(payload);
 
@@ -107,14 +104,14 @@ public class MqttReceiverConfig {
                     String devEui = rootNode.get("deviceInfo").get("devEui").asText();
                     String deviceName = rootNode.path("deviceInfo").path("deviceName").asText(null);
 
-                    // 擷取首頁展示用的靜態屬性
+                    // 靜態屬性
                     String deviceProfileName = deviceInfo.path("deviceProfileName").asText(null);
                     String deviceClassEnabled = deviceInfo.path("deviceClassEnabled").asText(null);
 
-                    // 擷取 Frame Counter
+                    // Frame Counter
                     Integer fCnt = rootNode.path("fCnt").asInt(0);
 
-                    // 擷取 rxInfo
+                    //  rxInfo
                     String gatewayId = null;
                     Integer rssi = null;
                     Double snr = null;
@@ -130,7 +127,7 @@ public class MqttReceiverConfig {
                         if (firstRx.has("snr"))
                             snr = firstRx.get("snr").asDouble();
 
-                        // 擷取 Gateway 座標
+                        // Gateway 座標
                         JsonNode locNode = firstRx.path("location");
                         if (!locNode.isMissingNode()) {
                             gwLat = locNode.path("latitude").asDouble(0.0);
@@ -138,7 +135,7 @@ public class MqttReceiverConfig {
                         }
                     }
 
-                    // 擷取 txInfo (頻率與射頻參數)
+                    // txInfo 
                     Long frequency = null;
                     Integer spreadingFactor = null;
                     if (rootNode.has("txInfo")) {

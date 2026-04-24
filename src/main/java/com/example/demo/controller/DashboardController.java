@@ -22,21 +22,21 @@ public class DashboardController {
     @Autowired
     private DeviceStatusLogRepository logRepository;
 
+
     @GetMapping("/alarms")
     public ResponseEntity<?> getAlarmDashboardData(@RequestParam(defaultValue = "1") int days) {
         try {
-            // 計算時間範圍 (從今天往前推算 days 天)
+
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime startDate = now.minusDays(days);
 
-            // 撈取該時間區間內的所有 Log
             List<DeviceStatusLog> logs = logRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startDate, now);
 
-            // 計算 Normal 與 Warning 的數量 (假設 1 = Normal, 2 = Alarm/Warning)
+            // 計算 Normal=1 與 Warning=2 的數量
             long normalCount = logs.stream().filter(log -> log.getUnitStatus() != null && log.getUnitStatus() == 1).count();
             long warningCount = logs.stream().filter(log -> log.getUnitStatus() != null && log.getUnitStatus() == 2).count();
 
-            // 整理格式化回傳
+
             Map<String, Object> summary = new HashMap<>();
             summary.put("normal", normalCount);
             summary.put("warning", warningCount);

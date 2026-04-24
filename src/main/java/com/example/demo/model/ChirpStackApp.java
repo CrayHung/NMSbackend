@@ -18,5 +18,5 @@ public class ChirpStackApp {
     private String name;
     private String description;
 
-    private LocalDateTime lastSyncTime; // 紀錄最後同步時間
+    private LocalDateTime lastSyncTime;
 }

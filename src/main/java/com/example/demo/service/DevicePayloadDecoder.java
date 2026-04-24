@@ -25,14 +25,14 @@ public class DevicePayloadDecoder {
     /************************ 儲存rawdata******************************* */
     @Autowired(required = false)
     private RawPayloadLogRepository rawPayloadLogRepository;
-    /************************ 儲存parse data******************************* */
+    /************************ 儲存parse data**************************** */
     @Autowired(required = false)
     private DeviceSpectrumLogRepository spectrumLogRepository;
 
     @Autowired(required = false)
     private DeviceConfigLogRepository configLogRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper(); // 用於轉 JSON
+    private final ObjectMapper objectMapper = new ObjectMapper(); 
     /******************************************************* */
 
     @Autowired(required = false)
@@ -108,7 +108,7 @@ public class DevicePayloadDecoder {
 
             byte[] dec = cobsDecode(enc);
 
-            // 加這行看到硬體有多少bytes回來
+            // 看到硬體有多少bytes回來
             // System.out.println(">>> [DEBUG] 收到封包解碼後長度: " + dec.length);
             // ==========================================
             // 放寬頻譜資料的攔截條件：只要大於 100 bytes 且不是標準狀態的 176 bytes
@@ -131,7 +131,7 @@ public class DevicePayloadDecoder {
             if (dec.length >= 186 && dec.length <= 188) {
                 // System.out.println(">>> 偵測到 Spectrum Data (頻譜資料) 封包, 長度: " + dec.length);
                 handleSpectrumData(devEui, dec);
-                return; // 處理完直接結束不進後面的 176 Bytes 邏輯
+                return;
             }
 
             // 原本的 176 Bytes 長度檢查
@@ -168,16 +168,15 @@ public class DevicePayloadDecoder {
 
             /*
              * B1 01 6F
-             * B1：代表這是一個「指令回覆 (Command Response)」。
-             * 01 或 02：代表它是回覆哪一個指令（01 = 基本資訊，02 = 設定參數）。
-             * 第三個 Byte 6F：通常是長度或校驗碼
+             * B1：代表這是一個指令回覆 (Command Response)
+             * 01 或 02：代表它是回覆哪一個指令（01 = 基本資訊，02 = 設定參數）
+             * 第三個 Byte 6F：是長度或校驗碼
              */
-            // 動態去表頭與路由邏輯
-            int headerByte = dec[0] & 0xFF; // 先抓出解碼後的第一個位元組
-            byte[] actualData = dec; // 預設使用完整陣列
-            int packetType = -1; // 1: 基本資訊, 2: 設定參數, 3: 即時狀態
+            int headerByte = dec[0] & 0xFF;
+            byte[] actualData = dec;
+            int packetType = -1;
 
-            // 判斷是否為帶有 B1 表頭的新版硬體格式 (例如 B1 01 6F)
+            // 判斷是否為帶有 B1 表頭的新版硬體格式
             if (headerByte == 0xB1 && dec.length > 3) {
                 int cmdType = dec[1] & 0xFF;
 
@@ -185,14 +184,14 @@ public class DevicePayloadDecoder {
                 actualData = java.util.Arrays.copyOfRange(dec, 3, dec.length);
 
                 if (cmdType == 0x01) {
-                    packetType = 1; // 40010101 (Model Type)
+                    packetType = 1; // 40010101 
                 } else if (cmdType == 0x02) {
-                    packetType = 2; // 40010102 (Setting Data)
+                    packetType = 2; // 40010102 
                 }
             }
-            // 判斷是否為舊版無表頭格式(沒有偷塞3個Bytes資料) 或Status Data
+            // 判斷是否為舊版無表頭格式或Status Data
             /*
-             * 第一個 Byte 會直接是機器的狀態碼（例如 0x01 正常，或 0x02 警報）
+             * 第一個 Byte 直接是機器的狀態碼（例如 0x01 正常，或 0x02 警報）
              * 如果 headerByte 不是 B1，程式會進入 else 判斷：
              */
             else {
@@ -211,19 +210,15 @@ public class DevicePayloadDecoder {
             // 根據乾淨的 actualData 進行正確路由
             if (packetType == 1) {
                 System.out.println(">>> 偵測到 Model Type (基本資訊) 封包");
-                // System.out.println(" Model Type 純淨資料 - 基本資訊: " +
-                // bytesToHex(actualData));
+
                 handleModelTypeData(devEui, actualData);
             } else if (packetType == 3) {
                 System.out.println(">>>  偵測到 Status Data (即時狀態) 封包");
-                // System.out.println(" Status Data 純淨資料 - 即時狀態: " +
-                // bytesToHex(actualData));
+
                 handleStatusData(devEui, actualData, gatewayId, fCnt, frequency, spreadingFactor, rssi, snr, gwLat,
                         gwLon, rawJsonPayload);
             } else {
                 System.out.println(">>>  偵測到 Setting Data (設定參數) 封包");
-                // System.out.println(" Setting Dat 純淨資料 - 設定參數: " +
-                // bytesToHex(actualData));
                 handleSettingData(devEui, actualData);
             }
 
@@ -234,7 +229,7 @@ public class DevicePayloadDecoder {
     }
 
     /**
-     * 解析 0xB0 0x03 0x00 0x00 (Model Type)
+     * 解析 0xB0 0x03 0x00 0x00
      */
     private void handleModelTypeData(String devEui, byte[] data) {
         String partName = extractAsciiString(data, 0, 20);
@@ -294,7 +289,7 @@ public class DevicePayloadDecoder {
     }
 
     /**
-     * 解析 0xB0 0x03 0x00 0x90 (Setting Data 設備參數設定)
+     * 解析 0xB0 0x03 0x00 0x90
      */
 
     private void handleSettingData(String devEui, byte[] data) {
@@ -402,7 +397,7 @@ public class DevicePayloadDecoder {
     }
 
     /**
-     * 解析 0xB0 0x03 0x00 0xA0 (Status Data 即時狀態)
+     * 解析 0xB0 0x03 0x00 0xA0 
      */
     private void handleStatusData(String devEui, byte[] data, String gatewayId, Integer fCnt, Long frequency,
             Integer spreadingFactor, Integer rssi, Double snr, Double gwLat, Double gwLon,

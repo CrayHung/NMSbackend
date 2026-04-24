@@ -31,7 +31,7 @@ public class RawPayloadLog {
         this.createdAt = LocalDateTime.now();
     }
 
-    // --- 以下為 Getters 與 Setters ---
+  
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getDevEui() { return devEui; }

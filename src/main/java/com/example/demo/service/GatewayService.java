@@ -35,8 +35,7 @@ public class GatewayService {
     private final DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_INSTANT;
 
         /////////////////////////////////////////////
-        //gateway topology用
-        //
+        //gateway topology
         /////////////////////////////////////////////
 
     public List<Map<String, Object>> listGatewaysWithMapFormat() {
@@ -71,7 +70,7 @@ public class GatewayService {
             gwOnlineMap.put((String)lgw.get("gatewayEui"), (Boolean)lgw.get("onlineStatus"));
         }
 
-        // 處理 Gateway (從 MySQL 拿座標結合即時狀態)
+        // 處理 Gateway 
         List<GatewayEntity> allGws = gatewayRepository.findAll();
         List<Map<String, Object>> gwList = allGws.stream()
                 // .filter(gw -> gw.getLatitude() != null && gw.getLongitude() != null)
@@ -129,7 +128,7 @@ public class GatewayService {
     public void syncAllGatewaysFromChirpStack() {
         System.out.println(" [Startup] 開始從 ChirpStack 同步 Gateway 原始資料...");
         try {
-            // 取得所有 Gateway 列表 (分頁設為100)
+     
             ListGatewaysRequest listReq = ListGatewaysRequest.newBuilder()
                     .setTenantId(tenantId)
                     .setLimit(100)
@@ -143,7 +142,6 @@ public class GatewayService {
                         .build();
                 Gateway gwDetail = gatewayStub.get(getReq).getGateway();
 
-                //執行更新或新增到 MySQL
                 GatewayEntity entity = gatewayRepository.findById(item.getGatewayId())
                         .orElse(new GatewayEntity());
 
@@ -224,7 +222,7 @@ public class GatewayService {
     }
 
     // ==========================================
-    // 更新 Gateway 座標 (透過 gRPC)
+    // 更新 Gateway 座標
     // ==========================================
     public void updateGatewayLocation(String gatewayId, Double latitude, Double longitude) {
         try {
@@ -252,7 +250,7 @@ public class GatewayService {
 
 
             // 因為gw硬體目前的座標直接被寫死在設定檔,即使透過grpc也無法更改
-            // 所以多儲存一份在mysql ,
+            // 所以多儲存一份在mysql 
             // 強制將正確座標寫入 MySQL
             // 尋找現有的 Entity，若不存在則建立新的
             GatewayEntity gwEntity = gatewayRepository.findById(gatewayId)
@@ -269,7 +267,7 @@ public class GatewayService {
                 gwEntity.setName(currentGateway.getName());
             }
 
-            // 儲存至 MySQL
+
             gatewayRepository.save(gwEntity);
             System.out.println(" 正確座標已強制寫入本地 MySQL 資料庫: [" + latitude + ", " + longitude + "]");
 

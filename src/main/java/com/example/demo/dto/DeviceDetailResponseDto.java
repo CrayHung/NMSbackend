@@ -8,7 +8,7 @@ public class DeviceDetailResponseDto {
     private String devEui = "unknow";
     private String name = "unknow";
     private LocalDateTime lastSeenAt;
-    private String syncStatus = "SYNCED"; // 狀態標記: SYNCED (已同步) 或 SYNCING (同步中)
+    private String syncStatus = "SYNCED"; // 同步狀態
 
     private BasicInfo basicInfo = new BasicInfo();
     private Settings settings = new Settings();
@@ -16,7 +16,7 @@ public class DeviceDetailResponseDto {
 
     @Data
     public static class BasicInfo {
-        // 如果資料庫是 NULL，前端就會收到 "資料同步中..."
+        
         private String partName = "data sync...";
         private String partNumber = "data sync...";
         private String serialNumber = "data sync...";
@@ -30,7 +30,7 @@ public class DeviceDetailResponseDto {
         
         @Data
         public static class Alarms {
-            // 數字型態給予 -999.0 代表尚未取得資料
+            //  -999.0 代表尚未取得資料
             private Double tempHigh = -999.0;
             private Double tempLow = -999.0;
             private Double voltHigh = -999.0;

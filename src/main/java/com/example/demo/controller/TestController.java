@@ -148,7 +148,7 @@ public class TestController {
             pushData.put("timestamp", System.currentTimeMillis());
             pushData.put("status", isTempAlarm ? "Alarm" : "Normal");
 
-            // 3. 呼叫推播服務
+            // 呼叫推播服務
             monitoringService.sendDeviceUpdate(devEui, pushData);
 
             System.out.println(" [模擬器] 發送數據 -> 設備: " + devEui + " | 溫度: " + temp + "℃ | 狀態: " );

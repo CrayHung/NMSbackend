@@ -22,7 +22,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // React 前端連接的端點
         registry.addEndpoint("/ws-monitoring")
-                .setAllowedOriginPatterns("*") // 允許所有來源跨域
+                .setAllowedOriginPatterns("*") 
                 .withSockJS();
     }
 }

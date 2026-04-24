@@ -11,7 +11,7 @@ import java.util.Date;
 public class JwtUtils {
 
 
-    private final String jwtSecret = "MySuperSecretKeyForJwtTokenGeneration2024!";
+    private final String jwtSecret = "e03dj94xu6d9286mp45k4ek7ejo3ej/n!";
     // Token 有效期
     private final long jwtExpirationMs = 604800000;
 

@@ -21,7 +21,6 @@ import java.util.Optional;
 @Service
 public class GoogleAuthService {
 
-    // 修改為標準 application.properties 命名格式 (小寫 + 點號)
     @Value("${google.client-id}")
     private String clientId;
 

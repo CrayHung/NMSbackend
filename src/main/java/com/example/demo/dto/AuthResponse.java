@@ -1,4 +1,3 @@
-//回傳物件 DTO , 回傳 User + JWT Token
 package com.example.demo.dto; 
 import com.example.demo.model.User;
 import lombok.AllArgsConstructor;

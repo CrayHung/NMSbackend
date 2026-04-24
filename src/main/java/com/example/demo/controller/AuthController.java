@@ -1,5 +1,3 @@
-// 接收前端傳來的 Code
-//在所有登入方法 (Local, Google, Line, FB) 成功後，都產生 Token
 package com.example.demo.controller;
 
 import com.example.demo.dto.AuthResponse;
@@ -44,7 +42,7 @@ public class AuthController {
     @Autowired
     private LocalAuthService localAuthService;
 
-    // 開放給外部使用的註冊 API
+    // 開放給外部使用的註冊
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
         try {
@@ -52,7 +50,6 @@ public class AuthController {
             String email = payload.get("email");
             String password = payload.get("password");
 
-            // 呼叫 Service 進行註冊 (Service 內已經會加密密碼了)
             User user = localAuthService.register(name, email, password, "USER");
 
             return ResponseEntity.ok(user);
@@ -65,13 +62,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> localLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
         try {
-            // 先執行原本的登入驗證
+
             User user = localAuthService.login(payload.get("email"), payload.get("password"), getIpAddress(request));
 
-            // 驗證成功 -> 產生 JWT
             String token = jwtUtils.generateToken(user.getEmail());
 
-            // 回傳 Token + User
             return ResponseEntity.ok(new AuthResponse(token, user));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
@@ -81,7 +76,7 @@ public class AuthController {
     // 取得所有登入紀錄
     @GetMapping("/history")
     public ResponseEntity<?> getAllLoginLogs() {
-        // 依照時間倒序排列
+        // 倒序排列
         return ResponseEntity.ok(loginLogRepository.findAll(Sort.by(Sort.Direction.DESC, "loginTime")));
     }
 
@@ -123,13 +118,11 @@ public class AuthController {
             // 傳入 IP
             User user = lineAuthService.lineLogin(code, ipAddress);
 
-            // 在這裡檢查帳號狀態
             if (!user.isActive()) {
-                // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
             }
 
-            // 產生 JWT
+
             String token = jwtUtils.generateToken(user.getEmail());
             return ResponseEntity.ok(new AuthResponse(token, user));
         } catch (Exception e) {
@@ -152,13 +145,12 @@ public class AuthController {
         try {
             User user = googleAuthService.googleLogin(code, redirectUri, ipAddress);
 
-            // 在這裡檢查帳號狀態
+
             if (!user.isActive()) {
-                // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
             }
 
-            // 產生 JWT
+            
             String token = jwtUtils.generateToken(user.getEmail());
 
             return ResponseEntity.ok(new AuthResponse(token, user));
@@ -179,20 +171,18 @@ public class AuthController {
 
         if (code == null)
             return ResponseEntity.badRequest().body("Code is required");
-        // Facebook 對 redirectUri 檢查極嚴格，建議從前端傳過來以確保一致
+        // Facebook 對 redirectUri 檢查極嚴格 建議從前端傳過來以確保一致
         if (redirectUri == null)
             return ResponseEntity.badRequest().body("Redirect URI is required");
 
         try {
             User user = facebookAuthService.facebookLogin(code, redirectUri, ipAddress);
         
-            // 在這裡檢查帳號狀態
+
             if (!user.isActive()) {
-                // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
             }
             
-            // 產生 JWT
             String token = jwtUtils.generateToken(user.getEmail());
             return ResponseEntity.ok(new AuthResponse(token, user));
         } catch (Exception e) {
