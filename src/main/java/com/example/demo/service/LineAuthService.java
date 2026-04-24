@@ -39,7 +39,7 @@ public class LineAuthService {
 
     public User lineLogin(String code, String ipAddress) {
         try {
-            // 1. Get Token
+            // Get Token
             String tokenUrl = "https://api.line.me/oauth2/v2.1/token";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -55,7 +55,7 @@ public class LineAuthService {
             ResponseEntity<String> response = restTemplate.postForEntity(tokenUrl, request, String.class);
             String accessToken = objectMapper.readTree(response.getBody()).path("access_token").asText();
 
-            // 2. Get Profile
+            //  Get Profile
             String profileUrl = "https://api.line.me/v2/profile";
             HttpHeaders profileHeaders = new HttpHeaders();
             profileHeaders.set("Authorization", "Bearer " + accessToken);
@@ -79,7 +79,7 @@ public class LineAuthService {
             final String finalEmail = email;
 
 
-            // 3. Save User
+            // Save User
             User user = userRepository.findByLineId(lineUserId)
                     .map(existingUser -> {
                         existingUser.setName(displayName);
@@ -87,7 +87,7 @@ public class LineAuthService {
                         existingUser.setLastLoginTime(LocalDateTime.now());
                         existingUser.setProvider(AuthProvider.LINE);
 
-                        // [補充] 如果舊資料的 email 是空的，也幫他補上，不然登入後一樣會壞掉
+                        // 如果舊資料的 email 是空的 也補上 不然登入後一樣會壞掉
                         if (existingUser.getEmail() == null || existingUser.getEmail().isEmpty()) {
                             existingUser.setEmail(finalEmail);
                         }
@@ -95,7 +95,6 @@ public class LineAuthService {
                         return existingUser;
                     })
                     .orElseGet(() -> {
-                        // 使用 User(email, name, pictureUrl, provider) 建構子
                         User newUser = new User(finalEmail, displayName, pictureUrl, AuthProvider.LINE);
                         newUser.setLineId(lineUserId);
                         return newUser;
@@ -103,27 +102,20 @@ public class LineAuthService {
 
             User savedUser = userRepository.save(user);
 
-            // 將這段註解調並改道controller裡面去驗證active/inactive, 不然註冊完設定好email會因為跑RuntimeException導致資料沒有成功被存入資料庫
-            // // [檢查帳號狀態]
-            // if (!savedUser.isActive()) {
-            //     loginLogRepository.save(new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress,
-            //             LoginStatus.FAILURE, "Account Inactive"));
-            //     // 這是一個 RuntimeException
-            //     throw new RuntimeException("您的帳號尚未啟用或已被停用，請聯繫管理員");
-            // }
+
 
             
-            // 4. Log Success
+            // Log Success
             loginLogRepository.save(
                     new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress, LoginStatus.SUCCESS, "LINE Login Success"));
             return savedUser;
 
         } catch (RuntimeException e) {
-            // [修正] 優先捕捉 RuntimeException (包含我們自己拋出的 "尚未啟用")
+            // 優先捕捉 RuntimeException 包含自己拋出的 "尚未啟用"
             // 直接往上拋，讓 Controller 接收到正確的錯誤訊息
             throw e;
         } catch (Exception e) {
-            // [修正] 捕捉其餘 Checked Exceptions (如 JsonProcessingException)
+            // 捕捉其餘 Checked Exceptions 如 JsonProcessingException
             // 將其包裝成 RuntimeException，避免編譯錯誤
             loginLogRepository.save(new LoginLog(null, "LINE_Unknown", ipAddress, LoginStatus.FAILURE, e.getMessage()));
             throw new RuntimeException("LINE Login Failed: " + e.getMessage(), e);

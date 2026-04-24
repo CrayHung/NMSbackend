@@ -25,14 +25,12 @@ public class LocalAuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // 註冊 (Local Register)
+    // 註冊
     public User register(String name, String email, String rawPassword, String role) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
-        // 使用符合新 User 結構的設定方式
-        // 建構子可使用新的，或像這樣用 Setter
         User user = new User();
         user.setName(name);
         user.setEmail(email);
@@ -40,19 +38,14 @@ public class LocalAuthService {
         user.setRole(role != null ? role : "USER");
         user.setCreateTime(LocalDateTime.now());
         
-        // [修改] 設定初始 Provider 為 LOCAL
         user.setProvider(AuthProvider.LOCAL);
 
-        // [刪除] 不再需要 user.setProviderId("local_" + email);
-        // 因為 User.java 已經移除了這個欄位，Local 帳號靠 Email 識別即可
-
-        // 本地註冊預設 Active = true
         user.setActive(true);
 
         return userRepository.save(user);
     }
 
-    // 登入 (Local Login)
+    // 登入
     public User login(String email, String rawPassword, String ipAddress) {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
@@ -63,9 +56,9 @@ public class LocalAuthService {
 
         User user = userOpt.get();
 
-        // [修改] 登入檢查邏輯
-        // 舊邏輯: if (user.getProvider() != AuthProvider.LOCAL) -> 錯誤，會擋住混合登入的使用者
-        // 新邏輯: 檢查是否有密碼。如果有密碼，無論他上次是用 Google 還是 FB，都允許他嘗試用密碼登入。
+        //  登入檢查邏輯
+        // 舊邏輯: if (user.getProvider() != AuthProvider.LOCAL) -> 錯誤  會擋住混合登入的使用者
+        // 新邏輯: 檢查是否有密碼。如果有密碼，無論他上次是用 Google 還是 FB  都允許他嘗試用密碼登入
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             logFailure(user.getId(), user.getName(), ipAddress, "No local password set");
             throw new RuntimeException("此帳號是透過第三方 (Google/LINE/FB) 建立的，請使用該方式登入");
@@ -82,8 +75,6 @@ public class LocalAuthService {
             throw new RuntimeException("密碼錯誤。剩餘嘗試次數：" + attemptsLeft);
         }
 
-        // [新增] 登入成功後，將最後登入方式更新為 LOCAL
-        // 這樣前端 UserList 才會顯示他最近是用 Local 登入的
         user.setProvider(AuthProvider.LOCAL);
 
         // 重置失敗計數

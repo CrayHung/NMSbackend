@@ -38,17 +38,17 @@ public class GoogleAuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private LoginLogRepository loginLogRepository; // [整合] 注入 Log Repository
+    private LoginLogRepository loginLogRepository; 
 
     public User googleLogin(String code, String redirectUri, String ipAddress) {
         try {
-            // 1. 用 Code 換 Token
+            //用 Code 換 Token
             String accessToken = getAccessToken(code, redirectUri);
 
-            // 2. 用 Token 換 User Info
+            //用 Token 換 User Info
             Map<String, Object> googleUserInfo = getUserInfo(accessToken);
 
-            // 3. 處理使用者資料
+            //處理使用者資料
             String googleSub = (String) googleUserInfo.get("sub"); // Google 的唯一 ID
             String email = (String) googleUserInfo.get("email");
             String name = (String) googleUserInfo.get("name");
@@ -60,31 +60,31 @@ public class GoogleAuthService {
             // C. 若無，建立新帳號
 
             User user;
-            // 1. 優先用 Google ID 找 (最準確)
+            // 優先用 Google ID 找 
             Optional<User> existingUser = userRepository.findByGoogleId(googleSub);
             // Optional<User> existingUser = userRepository.findByProviderId(googleSub);
 
             if (existingUser.isPresent()) {
                 user = existingUser.get();
-                // 更新基本資料
+
                 user.setName(name);
                 user.setPictureUrl(picture);
                 user.setLastLoginTime(LocalDateTime.now());
                 user.setProvider(AuthProvider.GOOGLE); // 更新最後登入方式
             } else {
-                // 2. Google ID 找不到，嘗試用 Email 找 (帳號關聯)
+                // Google ID 找不到 嘗試用 Email 找 (帳號關聯)
                 Optional<User> userByEmail = userRepository.findByEmail(email);
                 
                 if (userByEmail.isPresent()) {
                     user = userByEmail.get();
-                    // [關鍵] 綁定 Google ID，但不影響原本的 FacebookId/LineId
+                    // 綁定 Google ID  但不影響原本的 FacebookId/LineId
                     user.setGoogleId(googleSub);
                     
                     user.setProvider(AuthProvider.GOOGLE);
                     user.setPictureUrl(picture);
                     user.setLastLoginTime(LocalDateTime.now());
                 } else {
-                    // 3. 全新使用者
+                    // 全新使用者
                     user = new User(email, name, picture, AuthProvider.GOOGLE);
                     user.setGoogleId(googleSub); // 設定 Google ID
                 }
@@ -94,17 +94,17 @@ public class GoogleAuthService {
 
 
 
-            // [新增] 檢查帳號狀態
+            // 檢查帳號狀態
             if (!savedUser.isActive()) {
-                // 這裡不需處理 30分鐘解鎖，因為 OAuth 通常不適用密碼錯誤鎖定，
-                // 這裡的 Inactive 通常是新人等待審核或被管理員停權。
+                // 這裡不需處理 30分鐘解鎖 因為 OAuth 通常不適用密碼錯誤鎖定
+                // 這裡的 Inactive 通常是新人等待審核或被管理員停權
                 loginLogRepository.save(new LoginLog(savedUser.getId(), savedUser.getName(), ipAddress, LoginStatus.FAILURE, "Account Inactive"));
                 throw new RuntimeException("您的帳號尚未啟用或已被停用，請聯繫管理員");
             }
 
 
 
-            // [整合] 紀錄成功 Log
+            //  紀錄成功 Log
             loginLogRepository.save(new LoginLog(
                     savedUser.getId(),
                     savedUser.getName(),
@@ -116,7 +116,7 @@ public class GoogleAuthService {
             return savedUser;
 
         } catch (Exception e) {
-            // [整合] 紀錄失敗 Log
+            // 紀錄失敗 Log
             e.printStackTrace();
             loginLogRepository.save(new LoginLog(
                     null,

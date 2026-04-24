@@ -12,9 +12,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // 設定前端訂閱的前綴，例如 /topic/device/xxx
+        // 設定前端訂閱的前綴
         config.enableSimpleBroker("/topic");
-        // 設定前端發送訊息給後端的前綴 (本專案主要由後端推送，較少用到)
+        // 設定前端發送訊息給後端的前綴..目前沒用
         config.setApplicationDestinationPrefixes("/app");
     }
 

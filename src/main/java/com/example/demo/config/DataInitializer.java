@@ -23,10 +23,10 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // 設定預設管理員的 Email
+        // 設定預設管理員的 帳號+Email  (admin/admin) 
         String adminEmail = "admin";
 
-        // 1. 檢查是否已經存在
+        // 檢查是否已經存在
         if (userRepository.findByEmail(adminEmail).isEmpty()) {
             System.out.println("偵測到無管理員帳號，正在建立預設 Admin...");
 
@@ -34,7 +34,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setName("System Admin");
             admin.setEmail(adminEmail);
             
-            // [重要] 密碼一定要經過加密
+            // 密碼經過加密
             admin.setPassword(passwordEncoder.encode("admin")); 
             
             admin.setRole("ADMIN");
@@ -51,7 +51,7 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("帳號: " + adminEmail);
             System.out.println("密碼: admin");
         } else {
-            System.out.println("管理員帳號已存在，跳過建立步驟。");
+            System.out.println("管理員帳號admin/admin已存在，跳過建立步驟。");
         }
     }
 }

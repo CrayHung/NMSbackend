@@ -37,7 +37,7 @@ public class FacebookAuthService {
 
     public User facebookLogin(String code, String redirectUri, String ipAddress) {
         try {
-            // 1. 換取 Access Token
+            // 換取 Access Token
             String tokenUrl = String.format(
                 "https://graph.facebook.com/v19.0/oauth/access_token?client_id=%s&client_secret=%s&redirect_uri=%s&code=%s",
                 appId, appSecret, redirectUri, code
@@ -47,7 +47,7 @@ public class FacebookAuthService {
             JsonNode tokenRoot = objectMapper.readTree(tokenResponse.getBody());
             String accessToken = tokenRoot.path("access_token").asText();
 
-            // 2. 換取 User Profile
+            // 換取 User Profile
             String userInfoUrl = "https://graph.facebook.com/me?fields=id,name,email,picture&access_token=" + accessToken;
             ResponseEntity<String> userResponse = restTemplate.getForEntity(userInfoUrl, String.class);
 
@@ -62,7 +62,7 @@ public class FacebookAuthService {
                 pictureUrl = userRoot.get("picture").get("data").path("url").asText();
             }
 
-            // 3. 儲存或更新使用者
+            //儲存或更新使用者
             User user;
 
             Optional<User> existingUser = userRepository.findByFacebookId(fbId);
@@ -79,7 +79,7 @@ public class FacebookAuthService {
                     Optional<User> userByEmail = userRepository.findByEmail(email);
                     if (userByEmail.isPresent()) {
                         user = userByEmail.get();
-                        // [關鍵] 綁定 FB ID
+                        // 綁定 FB ID
                         user.setFacebookId(fbId);
                         // user.setProviderId(fbId); 
 
@@ -92,7 +92,7 @@ public class FacebookAuthService {
                         user.setFacebookId(fbId);
                     }
                 } else {
-                    // 沒 Email 也沒 FB ID -> 全新 (這種情況無法自動關聯，視為新帳號)
+                    // 沒 Email 也沒 FB ID -> 全新 (這種情況無法自動關聯視為新帳號)
                     user = new User(null, name, pictureUrl, AuthProvider.FACEBOOK);
                     user.setFacebookId(fbId);
                 }
@@ -107,7 +107,7 @@ public class FacebookAuthService {
                 throw new RuntimeException("您的帳號尚未啟用或已被停用，請聯繫管理員");
             }
 
-            // 4. 紀錄 Log
+            // 紀錄 Log
             loginLogRepository.save(new LoginLog(
                 savedUser.getId(), savedUser.getName(), ipAddress, LoginStatus.SUCCESS, "Facebook Login Success"
             ));
@@ -115,10 +115,10 @@ public class FacebookAuthService {
             return savedUser;
 
         } catch (RuntimeException e) {
-            // [修正] 優先捕捉 RuntimeException (包含 "尚未啟用")，直接拋出
+            // 優先捕捉 RuntimeException (包含 "尚未啟用")  直接拋出
             throw e;
         } catch (Exception e) {
-            // [修正] 捕捉其餘 Checked Exceptions
+            // 捕捉其餘 Checked Exceptions
             e.printStackTrace();
             loginLogRepository.save(new LoginLog(
                 null, "Facebook_Unknown", ipAddress, LoginStatus.FAILURE, "FB Login Error: " + e.getMessage()

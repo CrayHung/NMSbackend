@@ -22,7 +22,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-// @CrossOrigin(origins = "http://localhost:5173")  //統一由security管理
 public class UserController {
 
     @Autowired
@@ -52,7 +51,7 @@ public class UserController {
         }
     }
 
-    // 1. 新增使用者 (Create)
+    // 新增使用者 (Create)
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody Map<String, String> payload) {
         String name = payload.get("name");
@@ -84,7 +83,7 @@ public class UserController {
             newUser.setCreateTime(LocalDateTime.now());
             newUser.setLastLoginTime(null);
             
-            // 手動新增的使用者，預設狀態看需求，這裡設為 true
+            // 手動新增的使用者 預設狀態看需求 這裡設為 true
             newUser.setActive(true);
 
             User savedUser = userRepository.save(newUser);
@@ -95,7 +94,7 @@ public class UserController {
         }
     }
 
-    // 2. 編輯使用者 (Update)
+    // 編輯使用者 (Update)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         Optional<User> userOpt = userRepository.findById(id);
@@ -116,14 +115,14 @@ public class UserController {
             user.setEmail((String) payload.get("email"));
         }
         
-        // [修正點] 加入 Active 狀態更新邏輯
+        // 加入 Active 狀態更新邏輯
         if (payload.containsKey("active")) {
             // 前端 JSON boolean 會自動對應成 Boolean 物件
             Object activeVal = payload.get("active");
             if (activeVal instanceof Boolean) {
                 user.setActive((Boolean) activeVal);
                 
-                // 如果管理員啟用了帳號，順便清除之前的鎖定狀態，讓他可以立刻登入
+                // 如果管理員啟用了帳號，順便清除之前的鎖定狀態 讓他可以立刻登入
                 if ((Boolean) activeVal) {
                     user.setLoginAttempts(0);
                     user.setLockTime(null);
@@ -143,7 +142,7 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // 3. 刪除使用者 (Delete)
+    // 刪除使用者 (Delete)
     @DeleteMapping("/{id}")
     @Transactional 
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {

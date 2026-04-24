@@ -21,7 +21,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-// @CrossOrigin(origins = "http://localhost:5173") //統一由security管理
 public class AuthController {
 
     @Autowired
@@ -45,7 +44,7 @@ public class AuthController {
     @Autowired
     private LocalAuthService localAuthService;
 
-    // [新增] 開放給外部使用的註冊 API
+    // 開放給外部使用的註冊 API
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
         try {
@@ -62,7 +61,7 @@ public class AuthController {
         }
     }
 
-    // 1. 本地登入
+    // 本地登入
     @PostMapping("/login")
     public ResponseEntity<?> localLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
         try {
@@ -79,6 +78,32 @@ public class AuthController {
         }
     }
 
+    // 取得所有登入紀錄
+    @GetMapping("/history")
+    public ResponseEntity<?> getAllLoginLogs() {
+        // 依照時間倒序排列
+        return ResponseEntity.ok(loginLogRepository.findAll(Sort.by(Sort.Direction.DESC, "loginTime")));
+    }
+
+    @GetMapping("/logs/{userId}")
+    public ResponseEntity<?> getLoginLogs(@PathVariable Long userId) {
+        return ResponseEntity.ok(loginLogRepository.findByUserIdOrderByLoginTimeDesc(userId));
+    }
+
+    // 取得 IP
+    private String getIpAddress(HttpServletRequest request) {
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        if (ipAddress == null || ipAddress.isEmpty()) {
+            ipAddress = request.getRemoteAddr();
+        }
+        return ipAddress;
+    }
+
+
+
+
+
+    
     // Line Login
     @PostMapping("/line")
     public ResponseEntity<?> lineLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
@@ -98,7 +123,7 @@ public class AuthController {
             // 傳入 IP
             User user = lineAuthService.lineLogin(code, ipAddress);
 
-            // 2. [新增] 在這裡檢查帳號狀態
+            // 在這裡檢查帳號狀態
             if (!user.isActive()) {
                 // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
@@ -127,7 +152,7 @@ public class AuthController {
         try {
             User user = googleAuthService.googleLogin(code, redirectUri, ipAddress);
 
-            // [新增] 在這裡檢查帳號狀態
+            // 在這裡檢查帳號狀態
             if (!user.isActive()) {
                 // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
@@ -143,7 +168,7 @@ public class AuthController {
         }
     }
 
-    // [新增] Facebook Login
+    // Facebook Login
     @PostMapping("/facebook")
     public ResponseEntity<?> facebookLogin(@RequestBody Map<String, String> payload, HttpServletRequest request) {
         String code = payload.get("code");
@@ -161,7 +186,7 @@ public class AuthController {
         try {
             User user = facebookAuthService.facebookLogin(code, redirectUri, ipAddress);
         
-            // [新增] 在這裡檢查帳號狀態
+            // 在這裡檢查帳號狀態
             if (!user.isActive()) {
                 // 回傳 403 禁止訪問，並帶上訊息
                 return ResponseEntity.status(403).body("您的帳號尚未啟用，請等待管理員審核");
@@ -175,24 +200,4 @@ public class AuthController {
         }
     }
 
-    // 取得所有登入紀錄
-    @GetMapping("/history")
-    public ResponseEntity<?> getAllLoginLogs() {
-        // 依照時間倒序排列
-        return ResponseEntity.ok(loginLogRepository.findAll(Sort.by(Sort.Direction.DESC, "loginTime")));
-    }
-
-    @GetMapping("/logs/{userId}")
-    public ResponseEntity<?> getLoginLogs(@PathVariable Long userId) {
-        return ResponseEntity.ok(loginLogRepository.findByUserIdOrderByLoginTimeDesc(userId));
-    }
-
-    // 輔助方法：取得 IP
-    private String getIpAddress(HttpServletRequest request) {
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null || ipAddress.isEmpty()) {
-            ipAddress = request.getRemoteAddr();
-        }
-        return ipAddress;
-    }
 }

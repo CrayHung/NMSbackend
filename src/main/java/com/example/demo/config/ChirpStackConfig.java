@@ -1,6 +1,3 @@
-/**
- * 只負責生產單一個 ManagedChannel 和 Stubs (Bean)
- */
 package com.example.demo.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,9 +25,6 @@ public class ChirpStackConfig {
     @Value("${chirpstack.api-token}")
     private String apiToken;
 
-    /**
-     * 建立全域唯一的 gRPC 通道
-     */
     @Bean
     public ManagedChannel managedChannel() {
         return ManagedChannelBuilder.forAddress(host, port)
@@ -38,19 +32,13 @@ public class ChirpStackConfig {
                 .build();
     }
 
-    /**
-     * 手動定義 ObjectMapper Bean 解決注入失敗問題
-     */
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule()); // 支援 Java 8 時間格式
+        mapper.registerModule(new JavaTimeModule());
         return mapper;
     }
 
-    /**
-     * 封裝 API Token 的 Header
-     */
     private Metadata getAuthHeader() {
         Metadata header = new Metadata();
         Metadata.Key<String> key = Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);

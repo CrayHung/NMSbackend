@@ -1,4 +1,3 @@
-// 負責檢查每個請求 Header 是否有 Token
 package com.example.demo.security;
 
 import jakarta.servlet.FilterChain;

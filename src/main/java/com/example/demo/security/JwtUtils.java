@@ -1,4 +1,3 @@
-// 產生 Token和驗證 Token
 package com.example.demo.security;
 
 import io.jsonwebtoken.*;
@@ -11,9 +10,9 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-    // 請換成更複雜的密鑰 (至少 32 字元)
+
     private final String jwtSecret = "MySuperSecretKeyForJwtTokenGeneration2024!";
-    // Token 有效期 (例如 7 天)
+    // Token 有效期
     private final long jwtExpirationMs = 604800000;
 
     private Key getSigningKey() {
@@ -25,7 +24,7 @@ public class JwtUtils {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                // .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

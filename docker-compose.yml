@@ -8,7 +8,11 @@ services:
       - "9090:8080"
     depends_on:
       - db
+    #  新增這兩行，讓 Linux 容器可以透過 host.docker.internal 連回主機
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
+      TZ: Asia/Taipei
       # 資料庫連線 (維持不變，走 Docker 內部網路)
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: auth_user
@@ -18,8 +22,6 @@ services:
       # 這裡必須填「使用者瀏覽器」看到的 Nginx 入口網址，也就是 9080 Port
       LINE_CALLBACK_URL: "http://twowayiot.com:9080/callback"
       
-      # Facebook 需要完整路徑...
-      # 不行!! FB Google都不接受http和port號的URL
       FACEBOOK_REDIRECT_URI: "http://twowayiot.com:9080/auth/facebook/callback"
       
       # Google 若在 application.properties 沒設變數，這裡不用加，
@@ -28,14 +30,31 @@ services:
       # 注入環境變數覆寫 , 讓docker去決定此時環境下去複寫application.properties 的內容
       DB_HOST: db  # 讓容器連向 db 服務名稱
       DB_PORT: 3306
-      CHIRPSTACK_HOST: 192.168.1.220 # 遠端環境的 ChirpStack IP
+
+      # *****************for niko******************************************
+      # CHIRPSTACK_HOST: 192.168.1.220 # 遠端環境的 ChirpStack IP
+      # 👇 修改以下兩個變數，指向宿主機
+      # CHIRPSTACK_HOST: host.docker.internal
+      # ***********************************************************
+
+
+
+      # *****************for niko******************************************
+      #  新增這一行，Spring Boot 會自動覆寫 application.properties 的設定
+      # 因為原本新竹chirpstack對外port是9001 , niko的chirpstack對外port是8080
+      # CHIRPSTACK_PORT: 8080
+     # ***********************************************************
+
+      MQTT_BROKER_URL: tcp://host.docker.internal:1884
 
   db:
     image: mysql:8.0
     restart: always
-    # 在遠端主機上執行的話,這個 ports:- "3307:3306"要註解
+    # ****************************************************************************************************
+    # 在遠端主機上執行的話,這個 ports:- "3307:3306"要註解掉
     ports:
       - "3307:3306"  # 將本機的 3307 映射到容器內的 3306
+    # ****************************************************************************************************
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: auth_db
